@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Scroll-to-Bid Feed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one phone-width column; header + snapping feed + a bid bar pinned to the bottom of the column. */
+:root{
+  --bg:#F5F5F2; --outer:#E9E9E4; --card:#FFFFFF; --fg:#14161B; --muted:#5E6470; --line:#E4E4DF; --chip:#F0F0EC;
+  --brand:#1F4E5F; --on-brand:#FFFFFF; --accent:#F4B63F; --accent-ink:#14161B;
+  --win:#0B6B45; --win-bg:#E3F4EC; --out:#A8360A; --out-bg:#FDEBDD; --scrim:rgba(20,22,27,.45);
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --bar-h:96px; --item-h:560px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#111316; --outer:#0B0C0E; --card:#1B1E23; --fg:#F1F2F4; --muted:#A4AAB4; --line:#2B2F36; --chip:#252930;
+  --win:#5BE0A4; --win-bg:#12291F; --out:#FF9B6A; --out-bg:#2F1C12; --scrim:rgba(0,0,0,.6); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#111316; --outer:#0B0C0E; --card:#1B1E23; --fg:#F1F2F4; --muted:#A4AAB4; --line:#2B2F36; --chip:#252930;
+  --win:#5BE0A4; --win-bg:#12291F; --out:#FF9B6A; --out-bg:#2F1C12; --scrim:rgba(0,0,0,.6); color-scheme:dark }
+
+html,body{height:100%}
+body{background:var(--outer); color:var(--fg); font-family:var(--body); -webkit-font-smoothing:antialiased; overflow:hidden}
+button{font:inherit; color:inherit; cursor:pointer}
+:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.app{position:relative; height:100%; max-width:460px; margin:0 auto; background:var(--bg); display:flex; flex-direction:column; overflow:hidden}
+
+/* header */
+.top{background:var(--brand); color:var(--on-brand); padding:10px 16px 12px; display:flex; align-items:center; gap:10px; flex:none}
+.logo{width:36px; height:36px; border-radius:10px; background:var(--on-brand); color:var(--brand); display:grid; place-items:center; font-family:var(--display); font-weight:800; font-size:18px; flex:none}
+.org{flex:1; min-width:0; display:flex; flex-direction:column}
+.org b{font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.org span{font-size:12px; opacity:.82}
+.clock{font-family:var(--mono); font-weight:600; font-size:13px; background:rgba(255,255,255,.15); padding:7px 10px; border-radius:10px; display:flex; align-items:center; gap:7px; font-variant-numeric:tabular-nums; white-space:nowrap}
+.clock i{width:7px; height:7px; border-radius:50%; background:var(--accent)}
+.tools{display:flex; gap:8px; padding:10px 16px 2px; flex:none}
+.tool{height:38px; padding:0 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); display:flex; align-items:center; gap:8px; font-weight:600; font-size:13.5px; white-space:nowrap}
+.tool .lot{font-family:var(--mono); font-weight:600}
+.tool .n{background:var(--fg); color:var(--bg); font-size:11.5px; font-weight:800; border-radius:999px; padding:1px 7px}
+.tool.gear{margin-left:auto; padding:0 10px}
+
+/* feed */
+.feed{flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; scroll-snap-type:y proximity;
+  scroll-padding-bottom:var(--bar-h); padding:10px 16px calc(var(--bar-h) + 14px); display:flex; flex-direction:column; gap:14px}
+.feed.hard{scroll-snap-type:y mandatory}
+.feed.off{scroll-snap-type:none}
+.item{flex:none; height:var(--item-h); scroll-snap-align:center; scroll-snap-stop:normal; background:var(--card); border-radius:24px; overflow:hidden;
+  display:flex; flex-direction:column; box-shadow:0 1px 0 var(--line), 0 14px 28px -22px rgba(20,22,27,.5); transition:opacity .25s, transform .25s}
+.item.dim{opacity:.55; transform:scale(.985)}
+.photo{flex:1 1 auto; min-height:120px; position:relative; overflow:hidden; background:var(--sky)}
+.photo .ground{position:absolute; left:0; right:0; bottom:0; height:var(--gh); background:var(--ground)}
+.photo .hill{position:absolute; left:-12%; right:38%; bottom:0; height:calc(var(--gh) * .62); background:var(--hill); border-radius:50% 50% 0 0}
+.photo .sun{position:absolute; width:var(--sr); aspect-ratio:1; left:var(--sx); top:var(--sy); border-radius:50%; background:var(--sun)}
+.tag{position:absolute; top:12px; left:12px; font-family:var(--mono); font-weight:600; font-size:12px; background:#FFFFFF; color:#14161B; padding:5px 9px; border-radius:8px}
+.chip{position:absolute; top:12px; right:12px; font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px}
+.chip.win{background:var(--win-bg); color:var(--win)} .chip.out{background:var(--out-bg); color:var(--out)} .chip.new{background:#FFFFFF; color:#14161B}
+.info{padding:14px 16px 16px; display:flex; flex-direction:column; gap:6px; flex:none}
+.info h2{margin:0; font-family:var(--display); font-weight:800; font-size:26px; line-height:1.05; letter-spacing:-.5px; text-wrap:balance}
+.meta{font-size:13px; color:var(--muted)}
+.desc{margin:2px 0 0; font-size:14.5px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.more{align-self:flex-start; margin-top:2px; border:0; background:none; padding:6px 0; font-weight:700; font-size:13.5px; color:var(--brand); text-decoration:underline; text-underline-offset:3px}
+:root[data-theme="dark"] .more{color:var(--accent)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .more{color:var(--accent)} }
+.end{flex:none; text-align:center; color:var(--muted); font-size:13.5px; padding:18px 0 6px}
+
+/* bid bar */
+.bar{position:absolute; left:0; right:0; bottom:0; padding:10px 12px calc(12px + env(safe-area-inset-bottom, 0px)); background:var(--card);
+  border-radius:22px 22px 0 0; box-shadow:0 -12px 30px -18px rgba(20,22,27,.45); display:flex; gap:10px; align-items:stretch; z-index:5}
+.latest{flex:1 1 40%; min-width:0; border-radius:16px; padding:9px 12px; background:var(--chip); display:flex; flex-direction:column; justify-content:center; gap:1px; transition:background .2s}
+.latest.win{background:var(--win-bg)} .latest.out{background:var(--out-bg)}
+.latest .l{font-size:11.5px; font-weight:700; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.latest.win .l{color:var(--win)} .latest.out .l{color:var(--out)}
+.latest .amt{font-family:var(--display); font-weight:800; font-size:24px; letter-spacing:-.5px; line-height:1.05; font-variant-numeric:tabular-nums}
+.latest .s{font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.latest.pulse{animation:pulse .9s ease}
+@keyframes pulse{0%{transform:scale(1)}30%{transform:scale(1.04)}100%{transform:scale(1)}}
+.bidbtn{flex:1 1 60%; min-width:0; border:0; border-radius:16px; background:var(--accent); color:var(--accent-ink); padding:8px 14px; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:1px; text-align:left; transition:opacity .15s, filter .15s}
+.bidbtn .k{font-size:11.5px; font-weight:700; opacity:.75}
+.bidbtn .t{font-weight:800; font-size:15.5px; line-height:1.15; width:100%; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.bidbtn.top{background:var(--win-bg); color:var(--win)}
+.bar.moving .bidbtn{opacity:.45; filter:saturate(.4); pointer-events:none}
+.swap{animation:swap .22s ease}
+@keyframes swap{from{opacity:.25; transform:translateY(4px)} to{opacity:1; transform:none}}
+
+/* toast */
+.toast{position:absolute; left:16px; right:16px; bottom:calc(var(--bar-h) + 10px); background:var(--fg); color:var(--bg); border-radius:16px; padding:12px 12px 12px 16px;
+  display:flex; align-items:center; gap:12px; font-size:13.5px; line-height:1.35; z-index:6; box-shadow:0 16px 30px -12px rgba(20,22,27,.5); transform:translateY(16px); opacity:0; pointer-events:none; transition:all .25s}
+.toast.show{transform:none; opacity:1; pointer-events:auto}
+.toast span{flex:1}
+.toast button{flex:none; border:0; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:13px; padding:9px 12px}
+
+/* sheets */
+.scrim{position:absolute; inset:0; background:var(--scrim); z-index:20; opacity:0; pointer-events:none; transition:opacity .2s}
+.scrim.show{opacity:1; pointer-events:auto}
+.sheet{position:absolute; left:0; right:0; bottom:0; z-index:21; background:var(--card); border-radius:24px 24px 0 0; max-height:86%; overflow-y:auto;
+  padding:0 18px calc(18px + env(safe-area-inset-bottom, 0px)); transform:translateY(105%); transition:transform .26s cubic-bezier(.2,.9,.3,1.05)}
+.sheet.show{transform:none}
+.shead{position:sticky; top:0; z-index:2; background:var(--card); margin:0 -18px 6px; padding:10px 18px 4px; display:flex; justify-content:center}
+.grab{width:40px; height:5px; border-radius:999px; background:var(--line); margin:2px 0 6px}
+.x{position:absolute; right:12px; top:8px; width:44px; height:44px; border-radius:50%; border:0; background:var(--chip); color:var(--fg); display:grid; place-items:center}
+.sheet h3{margin:0 0 4px; padding-right:48px; font-family:var(--display); font-weight:800; font-size:22px; letter-spacing:-.3px}
+.sub{color:var(--muted); font-size:13.5px; margin:0 0 14px}
+.row{display:flex; align-items:center; gap:10px}
+.thumb{width:56px; height:56px; border-radius:14px; position:relative; overflow:hidden; flex:none; background:var(--sky)}
+.thumb .ground{position:absolute; left:0; right:0; bottom:0; height:var(--gh); background:var(--ground)}
+.thumb .sun{position:absolute; width:30%; aspect-ratio:1; left:var(--sx); top:18%; border-radius:50%; background:var(--sun)}
+.stepper{display:flex; align-items:center; gap:10px; margin:16px 0 10px}
+.step{width:52px; height:52px; border-radius:16px; border:1.5px solid var(--line); background:var(--card); font-size:24px; font-weight:600; flex:none}
+.amtbox{flex:1; height:52px; border-radius:16px; background:var(--chip); display:flex; align-items:center; justify-content:center; gap:4px; font-family:var(--display); font-weight:800; font-size:28px}
+.amtbox span{color:var(--muted); font-size:20px}
+.amtbox input{width:120px; border:0; background:transparent; font:inherit; color:var(--fg); outline:none; text-align:left; font-variant-numeric:tabular-nums}
+.quick{display:flex; gap:8px; margin-bottom:12px}
+.quick button{flex:1; height:40px; border-radius:12px; border:1.5px solid var(--line); background:var(--card); font-weight:600; font-size:13px}
+.quick button.on{background:var(--fg); color:var(--bg); border-color:var(--fg)}
+.warn{background:var(--out-bg); color:var(--out); border-radius:12px; padding:10px 12px; font-size:13px; font-weight:600; margin-bottom:12px}
+.primary{width:100%; height:56px; border:0; border-radius:16px; background:var(--accent); color:var(--accent-ink); font-weight:800; font-size:17px}
+.ghost{width:100%; height:48px; border:1.5px solid var(--line); border-radius:14px; background:var(--card); font-weight:600; margin-top:8px}
+.fine{font-size:12.5px; color:var(--muted); text-align:center; margin:10px 0 0}
+.filters{display:flex; gap:8px; margin:6px 0 10px; flex-wrap:wrap}
+.filters button{height:36px; padding:0 13px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); font-weight:600; font-size:13px}
+.filters button.on{background:var(--fg); color:var(--bg); border-color:var(--fg)}
+.list{display:flex; flex-direction:column}
+.list button{display:flex; align-items:center; gap:12px; border:0; border-bottom:1px solid var(--line); background:none; padding:10px 0; text-align:left; width:100%}
+.list .thumb{width:46px; height:46px; border-radius:12px}
+.list .mid{flex:1; min-width:0; display:flex; flex-direction:column; gap:1px}
+.list .mid b{font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.list .mid small{font-size:12px; color:var(--muted)}
+.list .mid small.win{color:var(--win)} .list .mid small.out{color:var(--out)}
+.list .r{font-family:var(--mono); font-weight:600; font-size:14px; font-variant-numeric:tabular-nums}
+.list .lot{font-family:var(--mono); font-size:12px; color:var(--muted); width:30px}
+.hist{display:flex; flex-direction:column; margin-top:6px}
+.hist div{display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px}
+.hist .a{font-family:var(--mono); font-weight:600; min-width:70px} .hist .w{flex:1; font-weight:600} .hist .t{color:var(--muted); font-size:12.5px}
+.prose{font-size:15px; line-height:1.55; margin:6px 0 12px}
+.label{font-size:12px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--muted); margin:14px 0 4px}
+.seg{display:flex; background:var(--chip); border-radius:12px; padding:4px; gap:4px}
+.seg button{flex:1; border:0; background:none; border-radius:9px; padding:10px 6px; font-weight:600; font-size:13.5px; color:var(--muted)}
+.seg button.on{background:var(--card); color:var(--fg); box-shadow:0 2px 6px -3px rgba(20,22,27,.4)}
+.switch{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); font-size:14.5px}
+.switch input{width:22px; height:22px; accent-color:var(--brand)}
+.note{font-size:12.5px; color:var(--muted); line-height:1.45; margin:6px 0 0}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="logo" aria-hidden="true">S</div>
+    <div class="org"><b>Sunnyside Spring Auction</b><span>10 items · for the Library Fund</span></div>
+    <div class="clock" aria-label="Time left"><i></i><span id="clock">2d 14h 06m</span></div>
+  </header>
+  <div class="tools">
+    <button class="tool" id="jump" aria-label="Jump to an item"><span class="lot" id="jump-lot">No.01</span><span style="color:var(--muted)">of 10</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button class="tool" id="mine">My bids <span class="n" id="mine-n">3</span></button>
+    <button class="tool gear" id="gear" aria-label="Prototype settings">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+  </div>
+
+  <main class="feed" id="feed" aria-label="Auction items"></main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"><span id="toast-t"></span><button id="toast-b">Show me</button></div>
+
+  <div class="bar" id="bar">
+    <div class="latest" id="latest">
+      <span class="l" id="lat-l">Latest bid</span><span class="amt" id="lat-a">R0</span><span class="s" id="lat-s"></span>
+    </div>
+    <button class="bidbtn" id="bidbtn"><span class="k" id="bid-k">Bid R3 200</span><span class="t" id="bid-t">Bid on Blue Harbour</span></button>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h"></div>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const R = (n) => "R" + Number(n).toLocaleString("en-ZA").replace(/,/g, " ");
+const ME = "You";
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Sample auction (demo data). Bid history newest first; `m` = minutes ago.
+const ITEMS = [
+  { no: "01", title: "Blue Harbour", by: "Grade 7 art class", kind: "Acrylic on canvas · 600 × 900 mm", reserve: 2500, inc: 100,
+    desc: "A bright harbour scene painted together by the whole Grade 7 class during art week. Framed and ready to hang.",
+    bio: "Twenty-eight learners, one canvas and a week of lunch breaks. Every child added at least one boat.",
+    bids: [["You", 3100, 9], ["Johan V.", 3000, 21], ["You", 2800, 50], ["Anke R.", 2700, 80], ["Johan V.", 2600, 130], ["Lerato K.", 2500, 190]],
+    art: { sky: "#9CC7DA", ground: "#245E7A", hill: "#1B4A61", sun: "#FBE3A3", gh: "44%", sx: "62%", sy: "18%", sr: "17%" } },
+  { no: "02", title: "Weekend for two", by: "The Forest Lodge", kind: "Voucher · valid 12 months", reserve: 4000, inc: 100,
+    desc: "Two nights in a forest cabin with breakfast, a fireplace and the Knysna forest on your doorstep.",
+    bio: "A family-run lodge outside Plett. Their two children are in Grade 3 and Grade 6.",
+    bids: [["Pieter B.", 4600, 2], ["You", 4500, 18], ["Naledi M.", 4300, 64], ["Pieter B.", 4200, 95], ["Sipho D.", 4000, 160]],
+    art: { sky: "#C9D9B8", ground: "#3F6B3A", hill: "#2E5230", sun: "#F6F1DF", gh: "56%", sx: "14%", sy: "14%", sr: "14%" } },
+  { no: "03", title: "Family photo shoot", by: "Lens & Light Studio", kind: "Voucher · one hour on the beach", reserve: 1500, inc: 100,
+    desc: "An hour-long beach shoot at golden hour, with twenty edited photos delivered within a week.",
+    bio: "", bids: [],
+    art: { sky: "#F3D6C4", ground: "#C46A4E", hill: "#A9533B", sun: "#FFFFFF", gh: "30%", sx: "30%", sy: "24%", sr: "22%" } },
+  { no: "04", title: "Ceramic fruit bowl", by: "Mia van Wyk", kind: "Glazed stoneware · 300 mm", reserve: 800, inc: 50,
+    desc: "A wide, hand-thrown bowl in a deep ocean glaze. Food safe and dishwasher friendly.",
+    bio: "Mia throws pots in her garden studio in Keurboomstrand and teaches pottery on Saturdays.",
+    bids: [["Lerato K.", 950, 25], ["Johan V.", 900, 70], ["Lerato K.", 850, 140]],
+    art: { sky: "#E4DCCF", ground: "#8A6F55", hill: "#76604A", sun: "#2F4858", gh: "22%", sx: "34%", sy: "26%", sr: "28%" } },
+  { no: "05", title: "Wine tasting for six", by: "Bramble Hill Estate", kind: "Experience · Saturday afternoon", reserve: 1200, inc: 100,
+    desc: "A guided tasting of five wines with a cheese board for six people, on the terrace overlooking the vines.",
+    bio: "", bids: [["You", 1400, 40], ["Anke R.", 1300, 110]],
+    art: { sky: "#E9D4E0", ground: "#6E2A4A", hill: "#57203A", sun: "#F5B8C9", gh: "40%", sx: "58%", sy: "16%", sr: "18%" } },
+  { no: "06", title: "Principal for a day", by: "Sunnyside Primary", kind: "Experience · for one learner", reserve: 500, inc: 50,
+    desc: "Your child runs assembly, chooses the lunch menu and sits in the big chair for a whole school day.",
+    bio: "", bids: [["Naledi M.", 700, 55], ["Sipho D.", 600, 150], ["Naledi M.", 500, 300]],
+    art: { sky: "#FFE8A8", ground: "#E39B2D", hill: "#C9821C", sun: "#FFFFFF", gh: "34%", sx: "22%", sy: "18%", sr: "16%" } },
+  { no: "07", title: "Coastal Morning", by: "Pieter Botha", kind: "Watercolour · 400 × 300 mm", reserve: 1800, inc: 100,
+    desc: "Early light over Robberg, painted from the beach at Plett. Mounted and framed in oak.",
+    bio: "Pieter is a retired geography teacher who paints the Garden Route coastline.",
+    bids: [["Lerato K.", 2300, 6], ["Johan V.", 2200, 33], ["Lerato K.", 2000, 90], ["Anke R.", 1800, 200]],
+    art: { sky: "#BFD8E6", ground: "#6E9DB4", hill: "#557F93", sun: "#FFFFFF", gh: "38%", sx: "54%", sy: "20%", sr: "15%" } },
+  { no: "08", title: "Gourmet hamper", by: "The Deli on Main", kind: "Hamper", reserve: 600, inc: 50,
+    desc: "Local cheeses, charcuterie, fresh bread, preserves and a bottle of olive oil from the Langkloof.",
+    bio: "", bids: [["Johan V.", 850, 12], ["Sipho D.", 800, 44], ["Johan V.", 700, 100], ["Anke R.", 600, 220]],
+    art: { sky: "#FFE2B8", ground: "#C4782C", hill: "#A86322", sun: "#FFFFFF", gh: "40%", sx: "30%", sy: "20%", sr: "16%" } },
+  { no: "09", title: "Braai for ten", by: "The Dads' Braai Club", kind: "Experience · at your home", reserve: 900, inc: 100,
+    desc: "Four dads arrive with the fire, the meat and the tongs. You provide the garden and nine friends.",
+    bio: "", bids: [],
+    art: { sky: "#F6D7A7", ground: "#7A4B2A", hill: "#633C21", sun: "#E2552B", gh: "34%", sx: "48%", sy: "22%", sr: "18%" } },
+  { no: "10", title: "Surf lesson for two", by: "Plett Surf School", kind: "Experience · boards and wetsuits included", reserve: 600, inc: 50,
+    desc: "A two-hour beginner lesson at Lookout Beach for two people, any age from eight up.",
+    bio: "", bids: [],
+    art: { sky: "#BDE6F1", ground: "#1E7FA3", hill: "#17698A", sun: "#FFF3C4", gh: "42%", sx: "20%", sy: "18%", sr: "15%" } },
+];
+const RIVALS = ["Pieter B.", "Lerato K.", "Johan V.", "Naledi M.", "Sipho D.", "Anke R."];
+
+// Derived state per item.
+const topBid = (it) => it.bids[0] || null;
+const current = (it) => (topBid(it) ? topBid(it)[1] : 0);
+const minNext = (it) => (topBid(it) ? current(it) + it.inc : it.reserve);
+const iLead = (it) => !!topBid(it) && topBid(it)[0] === ME;
+const iBid = (it) => it.bids.some((b) => b[0] === ME);
+const status = (it) => (iLead(it) ? "win" : iBid(it) ? "out" : topBid(it) ? "bids" : "none");
+const ago = (m) => (m < 1 ? "just now" : m < 60 ? `${Math.round(m)} min ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`);
+
+// Settings (per viewer, remembered on this device).
+const S = { snap: "proximity", random: false, sim: true };
+try { Object.assign(S, JSON.parse(localStorage.getItem("feed-proto") || "{}")); } catch {}
+const saveS = () => { try { localStorage.setItem("feed-proto", JSON.stringify(S)); } catch {} };
+
+/* ------------------------------------------------------------ render */
+const feed = $("feed");
+const artVars = (a) => `--sky:${a.sky};--ground:${a.ground};--hill:${a.hill};--sun:${a.sun};--gh:${a.gh};--sx:${a.sx};--sy:${a.sy};--sr:${a.sr}`;
+function chipHTML(it) {
+  const s = status(it);
+  if (s === "win") return `<span class="chip win">You're the top bid</span>`;
+  if (s === "out") return `<span class="chip out">Outbid</span>`;
+  if (s === "none") return `<span class="chip new">No bids yet</span>`;
+  return "";
+}
+function renderFeed() {
+  feed.innerHTML = ITEMS.map((it, i) => `
+    <article class="item" data-i="${i}" aria-label="Item ${it.no}, ${esc(it.title)}">
+      <div class="photo" style="${artVars(it.art)}" role="img" aria-label="Photo of ${esc(it.title)} (placeholder)">
+        <div class="ground"></div><div class="hill"></div><div class="sun"></div>
+        <span class="tag">No.${it.no}</span><span class="chipwrap">${chipHTML(it)}</span>
+      </div>
+      <div class="info">
+        <h2>${esc(it.title)}</h2>
+        <div class="meta">${esc(it.by)} · ${esc(it.kind)}</div>
+        <p class="desc">${esc(it.desc)}</p>
+        <button class="more" data-more="${i}">Details and bid history</button>
+      </div>
+    </article>`).join("") + `<div class="end">That's everything — ${ITEMS.length} items. Thanks for supporting the Library Fund.</div>`;
+  feed.querySelectorAll("[data-more]").forEach((b) => b.addEventListener("click", () => openDetails(+b.dataset.more)));
+}
+function refreshCard(i) {
+  const el = feed.querySelector(`.item[data-i="${i}"] .chipwrap`);
+  if (el) el.innerHTML = chipHTML(ITEMS[i]);
+}
+function refreshCounts() { $("mine-n").textContent = ITEMS.filter(iBid).length; }
+
+/* ------------------------------------------------------------ sizing */
+const bar = $("bar");
+function measure() {
+  const barH = bar.offsetHeight;
+  document.documentElement.style.setProperty("--bar-h", barH + "px");
+  const visible = feed.clientHeight - barH;
+  // Each item fills most of the visible space so the next one peeks in below.
+  document.documentElement.style.setProperty("--item-h", Math.max(300, Math.round(visible * 0.9 - 14)) + "px");
+}
+
+/* ------------------------------------------------------------ which item is in view */
+let active = -1;
+function computeActive() {
+  const fr = feed.getBoundingClientRect();
+  const mid = fr.top + (feed.clientHeight - bar.offsetHeight) / 2;
+  let best = 0, bd = Infinity;
+  feed.querySelectorAll(".item").forEach((el, i) => {
+    const r = el.getBoundingClientRect();
+    const d = Math.abs((r.top + r.bottom) / 2 - mid);
+    if (d < bd) { bd = d; best = i; }
+  });
+  if (best !== active) { active = best; renderBar(true); }
+  feed.querySelectorAll(".item").forEach((el, i) => el.classList.toggle("dim", i !== active));
+}
+
+/* ------------------------------------------------------------ bid bar */
+function renderBar(swap) {
+  const it = ITEMS[active]; if (!it) return;
+  const s = status(it), t = topBid(it), lat = $("latest"), btn = $("bidbtn");
+  lat.className = "latest" + (s === "win" ? " win" : s === "out" ? " out" : "");
+  if (s === "win") { $("lat-l").textContent = "You're the top bid"; $("lat-a").textContent = R(current(it)); $("lat-s").textContent = `${it.bids.length} bids · No.${it.no}`; }
+  else if (s === "out") { $("lat-l").textContent = `Outbid by ${t[0]}`; $("lat-a").textContent = R(current(it)); $("lat-s").textContent = `${ago(t[2])} · No.${it.no}`; }
+  else if (s === "bids") { $("lat-l").textContent = `Latest bid · ${t[0]}`; $("lat-a").textContent = R(current(it)); $("lat-s").textContent = `${it.bids.length} bids · ${ago(t[2])}`; }
+  else { $("lat-l").textContent = "Opening bid"; $("lat-a").textContent = R(it.reserve); $("lat-s").textContent = "No bids yet — be the first"; }
+  if (s === "win") { btn.classList.add("top"); $("bid-k").textContent = "No need to bid"; $("bid-t").textContent = `You're winning ${it.title}`; btn.setAttribute("aria-label", `You're the top bid on ${it.title}`); }
+  else { btn.classList.remove("top"); $("bid-k").textContent = `Bid ${R(minNext(it))} or more`; $("bid-t").textContent = `Bid on ${it.title}`; btn.setAttribute("aria-label", `Bid on ${it.title}`); }
+  $("jump-lot").textContent = "No." + it.no;
+  if (swap && !reduce) { [lat, btn].forEach((el) => { el.classList.remove("swap"); void el.offsetWidth; el.classList.add("swap"); }); }
+}
+
+// The bid button only works once scrolling has settled, so a tap mid-scroll
+// can't land on the wrong item.
+let settleT = null, ticking = false;
+function settle() { bar.classList.remove("moving"); computeActive(); }
+feed.addEventListener("scroll", () => {
+  bar.classList.add("moving");
+  if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; computeActive(); }); }
+  clearTimeout(settleT); settleT = setTimeout(settle, 220);
+}, { passive: true });
+if ("onscrollend" in window) feed.addEventListener("scrollend", () => { clearTimeout(settleT); settleT = setTimeout(settle, 60); });
+
+function scrollToItem(i, smooth = true) {
+  const el = feed.querySelector(`.item[data-i="${i}"]`); if (!el) return;
+  el.scrollIntoView({ block: "center", behavior: smooth && !reduce ? "smooth" : "auto" });
+}
+
+/* ------------------------------------------------------------ sheets */
+const sheet = $("sheet"), scrim = $("scrim");
+let lastFocus = null;
+function openSheet(html) {
+  lastFocus = document.activeElement;
+  sheet.innerHTML = `<div class="shead"><span class="grab"></span><button class="x" id="sheet-x" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>` + html;
+  $("sheet-x").addEventListener("click", closeSheet);
+  scrim.classList.add("show"); sheet.classList.add("show");
+  setTimeout(() => { const f = sheet.querySelector("input, button"); if (f) f.focus({ preventScroll: true }); }, 50);
+}
+function closeSheet() { scrim.classList.remove("show"); sheet.classList.remove("show"); if (lastFocus) lastFocus.focus({ preventScroll: true }); }
+scrim.addEventListener("click", closeSheet);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet.classList.contains("show")) closeSheet(); });
+const thumb = (it) => `<div class="thumb" style="${artVars(it.art)}" aria-hidden="true"><div class="ground"></div><div class="sun"></div></div>`;
+
+// Bid confirmation: always shows the item's picture and name.
+function openBid() {
+  const i = active, it = ITEMS[i];
+  if (!it || iLead(it)) return;
+  const min = minNext(it);
+  let amount = min;
+  openSheet(`
+    <div class="row">${thumb(it)}<div style="min-width:0"><h3 id="sheet-h">Bid on ${esc(it.title)}</h3>
+      <div class="sub" style="margin:0">No.${it.no} · ${topBid(it) ? `current bid ${R(current(it))}` : `opening bid ${R(it.reserve)}`} · steps of ${R(it.inc)}</div></div></div>
+    <div class="stepper">
+      <button class="step" id="minus" aria-label="${R(it.inc)} less">−</button>
+      <label class="amtbox"><span>R</span><input id="amt" inputmode="numeric" aria-label="Your bid in rand"></label>
+      <button class="step" id="plus" aria-label="${R(it.inc)} more">+</button>
+    </div>
+    <div class="quick" id="quick">
+      <button data-v="${min}">${R(min)} · min</button><button data-v="${min + it.inc}">${R(min + it.inc)}</button><button data-v="${min + it.inc * 4}">${R(min + it.inc * 4)}</button>
+    </div>
+    <div id="warnbox"></div>
+    <button class="primary" id="place"></button>
+    <button class="ghost" id="cancel">Cancel</button>
+    <p class="fine">Bids can't be taken back. We'll tell you if someone tops you.</p>`);
+  const inp = $("amt");
+  const paint = () => {
+    inp.value = amount.toLocaleString("en-ZA").replace(/,/g, " ");
+    $("place").textContent = amount >= min ? `Place bid · ${R(amount)}` : `At least ${R(min)}`;
+    $("place").disabled = amount < min;
+    $("warnbox").innerHTML = amount >= min * 3 ? `<div class="warn">That's ${Math.round((amount / min) * 10) / 10}× the minimum bid. Check the zeros before you place it.</div>` : "";
+    document.querySelectorAll("#quick button").forEach((b) => b.classList.toggle("on", +b.dataset.v === amount));
+  };
+  inp.addEventListener("input", () => { const v = parseInt(inp.value.replace(/\D/g, ""), 10) || 0; amount = v; paint(); inp.value = v ? v.toLocaleString("en-ZA").replace(/,/g, " ") : ""; });
+  $("minus").addEventListener("click", () => { amount = Math.max(min, amount - it.inc); paint(); });
+  $("plus").addEventListener("click", () => { amount += it.inc; paint(); });
+  document.querySelectorAll("#quick button").forEach((b) => b.addEventListener("click", () => { amount = +b.dataset.v; paint(); }));
+  $("cancel").addEventListener("click", closeSheet);
+  $("place").addEventListener("click", () => {
+    if (amount < minNext(it)) { amount = minNext(it); paint(); return; } // someone bid while the sheet was open
+    it.bids.unshift([ME, amount, 0]);
+    closeSheet(); refreshCard(i); refreshCounts(); renderBar(true);
+    toast(`You're the top bid on ${it.title} at ${R(amount)}.`);
+  });
+  paint();
+}
+$("bidbtn").addEventListener("click", () => { if (!bar.classList.contains("moving")) openBid(); });
+
+function openDetails(i) {
+  const it = ITEMS[i];
+  openSheet(`
+    <h3 id="sheet-h">${esc(it.title)}</h3>
+    <p class="sub">No.${it.no} · ${esc(it.by)} · ${esc(it.kind)}</p>
+    <p class="prose">${esc(it.desc)}</p>
+    ${it.bio ? `<div class="label">About ${esc(it.by)}</div><p class="prose">${esc(it.bio)}</p>` : ""}
+    <div class="label">Bid history</div>
+    ${it.bids.length ? `<div class="hist">${it.bids.map((b) => `<div><span class="a">${R(b[1])}</span><span class="w">${esc(b[0])}</span><span class="t">${ago(b[2])}</span></div>`).join("")}</div>`
+      : `<p class="prose" style="color:var(--muted)">No bids yet. The opening bid is ${R(it.reserve)}.</p>`}
+    <button class="ghost" id="close">Close</button>`);
+  $("close").addEventListener("click", closeSheet);
+}
+
+// Jump straight to any item, or just the ones you've bid on / nobody has bid on.
+function openJump(filter = "all") {
+  const groups = { all: () => true, mine: iBid, none: (it) => !topBid(it) };
+  const counts = { all: ITEMS.length, mine: ITEMS.filter(iBid).length, none: ITEMS.filter((it) => !topBid(it)).length };
+  const rows = ITEMS.map((it, i) => ({ it, i })).filter(({ it }) => groups[filter](it));
+  const line = (it) => { const s = status(it); return s === "win" ? `<small class="win">You're the top bid</small>` : s === "out" ? `<small class="out">Outbid by ${esc(topBid(it)[0])}</small>` : s === "none" ? `<small>No bids yet</small>` : `<small>${it.bids.length} bids</small>`; };
+  openSheet(`
+    <h3 id="sheet-h">Jump to an item</h3>
+    <div class="filters" role="group" aria-label="Show">
+      <button data-f="all" class="${filter === "all" ? "on" : ""}">All ${counts.all}</button>
+      <button data-f="mine" class="${filter === "mine" ? "on" : ""}">My bids ${counts.mine}</button>
+      <button data-f="none" class="${filter === "none" ? "on" : ""}">No bids yet ${counts.none}</button>
+    </div>
+    <div class="list">${rows.map(({ it, i }) => `<button data-go="${i}"><span class="lot">${it.no}</span>${thumb(it)}
+      <span class="mid"><b>${esc(it.title)}</b>${line(it)}</span><span class="r">${R(topBid(it) ? current(it) : it.reserve)}</span></button>`).join("") || `<p class="sub">Nothing here yet.</p>`}</div>`);
+  sheet.querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click", () => openJump(b.dataset.f)));
+  sheet.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => { closeSheet(); setTimeout(() => scrollToItem(+b.dataset.go), 120); }));
+}
+$("jump").addEventListener("click", () => openJump("all"));
+$("mine").addEventListener("click", () => openJump("mine"));
+
+function openSettings() {
+  openSheet(`
+    <h3 id="sheet-h">Prototype settings</h3>
+    <p class="sub">Try the feed different ways on your own phone. These are for this mock-up only.</p>
+    <div class="label">Snapping</div>
+    <div class="seg" role="group" aria-label="Snapping">
+      <button data-s="proximity" class="${S.snap === "proximity" ? "on" : ""}">Gentle</button>
+      <button data-s="mandatory" class="${S.snap === "mandatory" ? "on" : ""}">Hard</button>
+      <button data-s="none" class="${S.snap === "none" ? "on" : ""}">Off</button>
+    </div>
+    <p class="note">Gentle settles an item in the middle when you stop near it; a fast flick glides past. Hard always stops on the next item. Off scrolls freely.</p>
+    <label class="switch"><span>Start at a random item each visit</span><input type="checkbox" id="s-random" ${S.random ? "checked" : ""}></label>
+    <label class="switch"><span>Simulate other bidders</span><input type="checkbox" id="s-sim" ${S.sim ? "checked" : ""}></label>
+    <button class="ghost" id="close">Done</button>`);
+  sheet.querySelectorAll("[data-s]").forEach((b) => b.addEventListener("click", () => { S.snap = b.dataset.s; saveS(); applySnap(); openSettings(); }));
+  $("s-random").addEventListener("change", (e) => { S.random = e.target.checked; saveS(); });
+  $("s-sim").addEventListener("change", (e) => { S.sim = e.target.checked; saveS(); });
+  $("close").addEventListener("click", closeSheet);
+}
+$("gear").addEventListener("click", openSettings);
+function applySnap() { feed.classList.toggle("hard", S.snap === "mandatory"); feed.classList.toggle("off", S.snap === "none"); }
+
+/* ------------------------------------------------------------ toast */
+let toastT = null, toastGo = null;
+function toast(text, goTo = null) {
+  $("toast-t").textContent = text; toastGo = goTo;
+  $("toast-b").hidden = goTo === null;
+  $("toast").classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(() => $("toast").classList.remove("show"), goTo === null ? 2800 : 5200);
+}
+$("toast-b").addEventListener("click", () => { $("toast").classList.remove("show"); if (toastGo !== null) scrollToItem(toastGo); });
+
+/* ------------------------------------------------------------ simulated bidders */
+function rivalBid() {
+  if (!S.sim || sheet.classList.contains("show")) return;
+  const pool = ITEMS.map((it, i) => i).filter((i) => Math.random() < (topBid(ITEMS[i]) ? 0.75 : 0.25));
+  const i = pool.length ? pool[Math.floor(Math.random() * pool.length)] : Math.floor(Math.random() * ITEMS.length);
+  const it = ITEMS[i], wasMine = iLead(it);
+  const rivals = RIVALS.filter((n) => !topBid(it) || n !== topBid(it)[0]);
+  const who = rivals[Math.floor(Math.random() * rivals.length)];
+  it.bids.unshift([who, minNext(it), 0]);
+  refreshCard(i); refreshCounts();
+  if (i === active) { renderBar(false); const l = $("latest"); if (!reduce) { l.classList.remove("pulse"); void l.offsetWidth; l.classList.add("pulse"); } }
+  if (wasMine) toast(`${who} outbid you on ${it.title}.`, i === active ? null : i);
+}
+setInterval(() => { ITEMS.forEach((it) => it.bids.forEach((b) => { b[2] += 1 / 6; })); if (active >= 0) renderBar(false); }, 10000);
+(function loop() { setTimeout(() => { rivalBid(); loop(); }, 9000 + Math.random() * 7000); })();
+
+/* ------------------------------------------------------------ countdown */
+const closeAt = Date.now() + ((2 * 24 + 14) * 60 + 6) * 60000;
+function tick() {
+  let s = Math.max(0, Math.floor((closeAt - Date.now()) / 1000));
+  const d = Math.floor(s / 86400); s -= d * 86400; const h = Math.floor(s / 3600); s -= h * 3600; const m = Math.floor(s / 60); s -= m * 60;
+  $("clock").textContent = d ? `${d}d ${h}h ${String(m).padStart(2, "0")}m` : `${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
+}
+setInterval(tick, 1000); tick();
+
+/* ------------------------------------------------------------ start */
+renderFeed(); refreshCounts(); applySnap(); measure();
+new ResizeObserver(() => { measure(); computeActive(); }).observe(feed);
+requestAnimationFrame(() => {
+  if (S.random) scrollToItem(Math.floor(Math.random() * ITEMS.length), false);
+  computeActive(); renderBar(false);
+});
+</script>
+
+</body>
+</html>
