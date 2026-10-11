@@ -201,6 +201,18 @@ button{font:inherit; color:inherit; cursor:pointer}
 .shead{background:transparent}
 .toast{background:rgba(20,22,27,.62); color:#FFFFFF}
 .end{color:var(--fg); opacity:.7}
+/* A slimmer glass panel: one-line details and description, Details as a small round i button. */
+.info{left:8px; right:8px; bottom:8px; padding:11px 12px 12px; gap:4px}
+.info h2{font-size:22px; padding-right:44px}
+.meta{font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.desc{font-size:13.5px; -webkit-line-clamp:1; margin:0}
+.pricewrap{margin-top:4px; gap:8px}
+.pblock{padding:5px 11px; border-radius:13px}
+.pblock .amt{font-size:19px}
+.pblock .l, .pblock .s{font-size:11px}
+.cbid{padding:0 16px; font-size:15.5px}
+.more{position:absolute; top:9px; right:9px; width:36px; height:36px; margin:0; padding:0; border-radius:50%; font-size:0; text-decoration:none; color:var(--fg); background:var(--glass-strong); border:1px solid var(--glass-line); display:grid; place-items:center}
+.more::before{content:"i"; font:italic 700 17px/1 Georgia, "Times New Roman", serif}
 /* A band of the photo's own colour behind the lower half of the glass panel, so every card is framed the same way. */
 .band{position:absolute; left:0; right:0; bottom:0; height:var(--band-h, 32%); background:var(--band, rgba(0,0,0,.25)); transition:background .4s}
 </style>
