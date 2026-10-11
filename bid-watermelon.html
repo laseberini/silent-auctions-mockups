@@ -14,8 +14,8 @@
 <style>
 /* Layout: one phone-width column; header + snapping feed + a bid bar pinned to the bottom of the column. */
 :root{
-  --bg:#F5F5F2; --outer:#E9E9E4; --card:#FFFFFF; --fg:#14161B; --muted:#5E6470; --line:#E4E4DF; --chip:#F0F0EC;
-  --brand:#2D6A3E; --on-brand:#FFFFFF; --accent:#FF5A6A; --accent-ink:#14161B; /* a school's two brand colours: rind green + watermelon pink */
+  --bg:#EEF4CF; --outer:#E2EBB8; --card:#FFFFFF; --fg:#14161B; --muted:#5E6470; --line:#E4E4DF; --chip:#F0F0EC;
+  --brand:#2DB34A; --on-brand:#111111; --accent:#F04B52; --accent-ink:#111111; /* watermelon: rind green, flesh red, seed black, pale rind */
   --win:#0B6B45; --win-bg:#E3F4EC; --out:#A8360A; --out-bg:#FDEBDD; --scrim:rgba(20,22,27,.45);
   --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
   --body:"Instrument Sans", "Segoe UI", system-ui, sans-serif;
@@ -23,10 +23,10 @@
   --bar-h:96px; --item-h:560px;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#111316; --outer:#0B0C0E; --card:#1B1E23; --fg:#F1F2F4; --muted:#A4AAB4; --line:#2B2F36; --chip:#252930;
+  --bg:#0F1A11; --outer:#0A120B; --card:#1B1E23; --fg:#F1F2F4; --muted:#A4AAB4; --line:#2B2F36; --chip:#252930;
   --win:#5BE0A4; --win-bg:#12291F; --out:#FF9B6A; --out-bg:#2F1C12; --scrim:rgba(0,0,0,.6); color-scheme:dark }}
 :root[data-theme="dark"]{
-  --bg:#111316; --outer:#0B0C0E; --card:#1B1E23; --fg:#F1F2F4; --muted:#A4AAB4; --line:#2B2F36; --chip:#252930;
+  --bg:#0F1A11; --outer:#0A120B; --card:#1B1E23; --fg:#F1F2F4; --muted:#A4AAB4; --line:#2B2F36; --chip:#252930;
   --win:#5BE0A4; --win-bg:#12291F; --out:#FF9B6A; --out-bg:#2F1C12; --scrim:rgba(0,0,0,.6); color-scheme:dark }
 
 html,body{height:100%}
@@ -41,7 +41,7 @@ button{font:inherit; color:inherit; cursor:pointer}
 .org{flex:1; min-width:0; display:flex; flex-direction:column}
 .org b{font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .org span{font-size:12px; opacity:.82}
-.clock{font-family:var(--mono); font-weight:600; font-size:13px; background:rgba(255,255,255,.15); padding:7px 10px; border-radius:10px; display:flex; align-items:center; gap:7px; font-variant-numeric:tabular-nums; white-space:nowrap}
+.clock{font-family:var(--mono); font-weight:600; font-size:13px; background:rgba(255,255,255,.35); padding:7px 10px; border-radius:10px; display:flex; align-items:center; gap:7px; font-variant-numeric:tabular-nums; white-space:nowrap}
 .clock i{width:7px; height:7px; border-radius:50%; background:var(--accent)}
 .tools{display:flex; gap:8px; padding:10px 16px 2px; flex:none}
 .tool{height:38px; padding:0 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); display:flex; align-items:center; gap:8px; font-weight:600; font-size:13.5px; white-space:nowrap}
