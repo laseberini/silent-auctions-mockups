@@ -259,7 +259,7 @@ const status = (it) => (iLead(it) ? "win" : iBid(it) ? "out" : topBid(it) ? "bid
 const ago = (m) => (m < 1 ? "just now" : m < 60 ? `${Math.round(m)} min ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`);
 
 // Settings (per viewer, remembered on this device).
-const S = { snap: "proximity", random: false, sim: true };
+const S = { snap: "proximity", random: false, sim: true, theme: "auto" };
 try { Object.assign(S, JSON.parse(localStorage.getItem("feed-proto") || "{}")); } catch {}
 const saveS = () => { try { localStorage.setItem("feed-proto", JSON.stringify(S)); } catch {} };
 
@@ -477,15 +477,27 @@ function openSettings() {
       <button data-s="none" class="${S.snap === "none" ? "on" : ""}">Off</button>
     </div>
     <p class="note">Gentle settles an item in the middle when you stop near it; a fast flick glides past. Hard always stops on the next item. Off scrolls freely.</p>
+    <div class="label">Light or dark</div>
+    <div class="seg" role="group" aria-label="Light or dark">
+      <button data-t="auto" class="${S.theme === "auto" ? "on" : ""}">Phone setting</button>
+      <button data-t="light" class="${S.theme === "light" ? "on" : ""}">Light</button>
+      <button data-t="dark" class="${S.theme === "dark" ? "on" : ""}">Dark</button>
+    </div>
     <label class="switch"><span>Start at a random item each visit</span><input type="checkbox" id="s-random" ${S.random ? "checked" : ""}></label>
     <label class="switch"><span>Simulate other bidders</span><input type="checkbox" id="s-sim" ${S.sim ? "checked" : ""}></label>
     <button class="ghost" id="close">Done</button>`);
   sheet.querySelectorAll("[data-s]").forEach((b) => b.addEventListener("click", () => { S.snap = b.dataset.s; saveS(); applySnap(); openSettings(); }));
+  sheet.querySelectorAll("[data-t]").forEach((b) => b.addEventListener("click", () => { S.theme = b.dataset.t; saveS(); applyMode(); openSettings(); }));
   $("s-random").addEventListener("change", (e) => { S.random = e.target.checked; saveS(); });
   $("s-sim").addEventListener("change", (e) => { S.sim = e.target.checked; saveS(); });
   $("close").addEventListener("click", closeSheet);
 }
 $("gear").addEventListener("click", openSettings);
+// Light / dark: follow the phone unless the viewer picks one.
+function applyMode() {
+  if (S.theme === "light" || S.theme === "dark") document.documentElement.dataset.theme = S.theme;
+  else delete document.documentElement.dataset.theme;
+}
 function applySnap() { feed.classList.toggle("hard", S.snap === "mandatory"); feed.classList.toggle("off", S.snap === "none"); }
 
 /* ------------------------------------------------------------ toast */
@@ -524,7 +536,7 @@ function tick() {
 setInterval(tick, 1000); tick();
 
 /* ------------------------------------------------------------ start */
-renderFeed(); refreshCounts(); applySnap(); measure();
+applyMode(); renderFeed(); refreshCounts(); applySnap(); measure();
 new ResizeObserver(() => { measure(); computeActive(); }).observe(feed);
 requestAnimationFrame(() => {
   if (S.random) scrollToItem(Math.floor(Math.random() * ITEMS.length), false);
