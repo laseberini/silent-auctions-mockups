@@ -74,23 +74,24 @@ button{font:inherit; color:inherit; cursor:pointer}
 .end{flex:none; text-align:center; color:var(--muted); font-size:13.5px; padding:18px 0 6px}
 
 /* bid bar */
-.bar{position:absolute; left:0; right:0; bottom:0; padding:10px 12px calc(12px + env(safe-area-inset-bottom, 0px)); background:var(--card);
+.bar{position:absolute; left:0; right:0; bottom:0; padding:8px 10px calc(10px + env(safe-area-inset-bottom, 0px)); transition:transform .26s cubic-bezier(.2,.9,.3,1); background:var(--card);
   border-radius:22px 22px 0 0; box-shadow:0 -12px 30px -18px rgba(20,22,27,.45); display:flex; gap:10px; align-items:stretch; z-index:5}
-.latest{flex:1 1 40%; min-width:0; border-radius:16px; padding:9px 12px; background:var(--chip); display:flex; flex-direction:column; justify-content:center; gap:1px; transition:background .2s}
+.latest{flex:1 1 40%; min-width:0; border-radius:14px; padding:6px 12px; background:var(--chip); display:flex; flex-direction:column; justify-content:center; gap:1px; transition:background .2s}
 .latest.win{background:var(--win-bg)} .latest.out{background:var(--out-bg)}
 .latest .l{font-size:11.5px; font-weight:700; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .latest.win .l{color:var(--win)} .latest.out .l{color:var(--out)}
-.latest .amt{font-family:var(--display); font-weight:800; font-size:24px; letter-spacing:-.5px; line-height:1.05; font-variant-numeric:tabular-nums}
+.latest .amt{font-family:var(--display); font-weight:800; font-size:21px; letter-spacing:-.5px; line-height:1.05; font-variant-numeric:tabular-nums}
 .latest .s{font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .latest.pulse{animation:pulse .9s ease}
 @keyframes pulse{0%{transform:scale(1)}30%{transform:scale(1.04)}100%{transform:scale(1)}}
-.bidbtn{flex:1 1 55%; min-width:0; border:0; border-radius:16px; background:var(--accent); color:var(--accent-ink); padding:8px 14px; display:flex; align-items:center; justify-content:center; gap:8px}
+.bidbtn{flex:1 1 55%; min-width:0; border:0; border-radius:14px; background:var(--accent); color:var(--accent-ink); padding:8px 14px; display:flex; align-items:center; justify-content:center; gap:8px}
 .bidbtn .t{font-weight:800; font-size:17px; white-space:nowrap}
+.bar.away{transform:translateY(calc(100% + 16px))}
 .swap{animation:swap .22s ease}
 @keyframes swap{from{opacity:.6; transform:translateY(2px)} to{opacity:1; transform:none}}
 
 /* toast */
-.toast{position:absolute; left:16px; right:16px; bottom:calc(var(--bar-h) + 10px); background:var(--fg); color:var(--bg); border-radius:16px; padding:12px 12px 12px 16px;
+.toast{position:absolute; left:16px; right:16px; bottom:calc(var(--bar-h) + 10px); transition:all .25s; background:var(--fg); color:var(--bg); border-radius:16px; padding:12px 12px 12px 16px;
   display:flex; align-items:center; gap:12px; font-size:13.5px; line-height:1.35; z-index:6; box-shadow:0 16px 30px -12px rgba(20,22,27,.5); transform:translateY(16px); opacity:0; pointer-events:none; transition:all .25s}
 .toast.show{transform:none; opacity:1; pointer-events:auto}
 .toast span{flex:1}
@@ -324,9 +325,12 @@ function renderBar(swap) {
 // settles, then opens the bid sheet for the item that came to rest in the
 // middle (the sheet shows its photo and name). The button never changes colour.
 let settleT = null, ticking = false, pendingBid = false;
-function settle() { bar.classList.remove("moving"); computeActive(); if (pendingBid) { pendingBid = false; openBid(); } }
+let startY = null;
+function settle() { bar.classList.remove("moving", "away"); startY = null; computeActive(); if (pendingBid) { pendingBid = false; openBid(); } }
 feed.addEventListener("scroll", () => {
   bar.classList.add("moving");
+  if (startY === null) startY = feed.scrollTop;
+  else if (Math.abs(feed.scrollTop - startY) > 14) bar.classList.add("away"); // ignore tiny nudges
   if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; computeActive(); }); }
   clearTimeout(settleT); settleT = setTimeout(settle, 220);
 }, { passive: true });
