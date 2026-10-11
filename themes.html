@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Colour Themes</title>
+<style>
+  :root{--bg:#F5F5F2;--fg:#14161B;--muted:#5E6470;--card:#FFFFFF;--line:#E4E4DF;--focus:#4F3BF5}
+  @media (prefers-color-scheme: dark){:root{--bg:#111316;--fg:#F1F2F4;--muted:#A4AAB4;--card:#1B1E23;--line:#2B2F36;--focus:#A99DFF;color-scheme:dark}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:28px 16px 40px}
+  main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  h1{font-size:24px;margin:0} p{margin:0;color:var(--muted)}
+  a.back{color:var(--muted);font-size:14px;text-decoration:none} a.back:hover{color:var(--fg)}
+  a.opt{display:flex;flex-direction:column;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;color:var(--fg);text-decoration:none}
+  a.opt:hover,a.opt:focus-visible{border-color:var(--focus);outline:none}
+  .head{display:flex;align-items:baseline;gap:10px}
+  .num{font:600 13px ui-monospace,Menlo,Consolas,monospace;color:var(--muted)}
+  .head b{font-size:17px}
+  .opt span.d{color:var(--muted);font-size:14px}
+  .strip{display:flex;height:40px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  .strip i{flex:1;display:block}
+  .strip i.wide{flex:2}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">← All mock-ups</a>
+  <h1>Colour themes</h1>
+  <p>The same feed (option 1) in three colour treatments. Each school would choose its own colours; these show how far the theming can go.</p>
+
+  <a class="opt" href="bid-cards.html">
+    <div class="head"><span class="num">1</span><b>Original</b></div>
+    <div class="strip" aria-hidden="true"><i class="wide" style="background:#1F4E5F"></i><i style="background:#F4B63F"></i><i style="background:#F5F5F2"></i><i style="background:#FFFFFF"></i></div>
+    <span class="d">Sunnyside teal header, yellow Bid buttons, neutral page.</span>
+  </a>
+
+  <a class="opt" href="bid-watermelon.html">
+    <div class="head"><span class="num">2</span><b>Watermelon, green header</b></div>
+    <div class="strip" aria-hidden="true"><i class="wide" style="background:#2DB34A"></i><i style="background:#F04B52"></i><i style="background:#EEF4CF"></i><i style="background:#111111"></i></div>
+    <span class="d">Bright rind-green header with seed-black text, pale-rind page, flesh-red Bid buttons.</span>
+  </a>
+
+  <a class="opt" href="bid-watermelon-slice.html">
+    <div class="head"><span class="num">3</span><b>Watermelon on the cards</b></div>
+    <div class="strip" aria-hidden="true"><i style="background:#2DB34A"></i><i style="background:#DCEBA6"></i><i class="wide" style="background:#FFE8E9"></i><i style="background:#F04B52"></i><i style="background:#111111"></i></div>
+    <span class="d">As 2, and every card is a slice: pale pink panel, pale-rind stripe and green rind along the bottom, red item-number tags.</span>
+  </a>
+</main>
+</body>
+</html>
