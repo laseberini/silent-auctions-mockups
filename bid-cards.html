@@ -60,6 +60,7 @@ button{font:inherit; color:inherit; cursor:pointer}
 .photo{flex:1 1 auto; min-height:120px; position:relative; overflow:hidden; background:var(--sky)}
 .photo .ground{position:absolute; left:0; right:0; bottom:0; height:var(--gh); background:var(--ground)}
 .photo .hill{position:absolute; left:-12%; right:38%; bottom:0; height:calc(var(--gh) * .62); background:var(--hill); border-radius:50% 50% 0 0}
+.photo img, .thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
 .photo .sun{position:absolute; width:var(--sr); aspect-ratio:1; left:var(--sx); top:var(--sy); border-radius:50%; background:var(--sun)}
 .tag{position:absolute; top:12px; left:12px; font-family:var(--mono); font-weight:600; font-size:12px; background:#FFFFFF; color:#14161B; padding:5px 9px; border-radius:8px}
 .chip{position:absolute; top:12px; right:12px; font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px}
@@ -230,7 +231,7 @@ const ITEMS = [
     bio: "", bids: [["Naledi M.", 700, 55], ["Sipho D.", 600, 150], ["Naledi M.", 500, 300]],
     art: { sky: "#FFE8A8", ground: "#E39B2D", hill: "#C9821C", sun: "#FFFFFF", gh: "34%", sx: "22%", sy: "18%", sr: "16%" } },
   { no: "07", title: "Coastal Morning", by: "Pieter Botha", kind: "Watercolour · 400 × 300 mm", reserve: 1800, inc: 100,
-    desc: "Early light over Robberg, painted from the beach at Plett. Mounted and framed in oak.",
+    desc: "A lighthouse above the shore in soft morning light. Mounted and framed in oak.",
     bio: "Pieter is a retired geography teacher who paints the Garden Route coastline.",
     bids: [["Lerato K.", 2300, 6], ["Johan V.", 2200, 33], ["Lerato K.", 2000, 90], ["Anke R.", 1800, 200]],
     art: { sky: "#BFD8E6", ground: "#6E9DB4", hill: "#557F93", sun: "#FFFFFF", gh: "38%", sx: "54%", sy: "20%", sr: "15%" } },
@@ -247,6 +248,9 @@ const ITEMS = [
     bio: "", bids: [],
     art: { sky: "#BDE6F1", ground: "#1E7FA3", hill: "#17698A", sun: "#FFF3C4", gh: "42%", sx: "20%", sy: "18%", sr: "15%" } },
 ];
+// Demo photos: freely licensed images from Wikimedia Commons (credited in each item's details).
+const PHOTOS = {"10":{"src":"https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/Surfing_lesson%2C_Essaouira%2C_Morocco.jpg/1280px-Surfing_lesson%2C_Essaouira%2C_Morocco.jpg","page":"https://commons.wikimedia.org/wiki/File:Surfing_lesson,_Essaouira,_Morocco.jpg","credit":"Goldfinchshuffle · CC BY-SA 4.0"},"01":{"src":"https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/E._Caruana_Dingli%2C_Moored_boats_in_a_harbour.jpg/1280px-E._Caruana_Dingli%2C_Moored_boats_in_a_harbour.jpg","page":"https://commons.wikimedia.org/wiki/File:E._Caruana_Dingli,_Moored_boats_in_a_harbour.jpg","credit":"Edward Caruana Dingli · Public domain"},"02":{"src":"https://upload.wikimedia.org/wikipedia/commons/a/a4/Historic_Interrorem_Cabin%2C_Olympic_National_Forest_%2823230748770%29.jpg","page":"https://commons.wikimedia.org/wiki/File:Historic_Interrorem_Cabin,_Olympic_National_Forest_(23230748770).jpg","credit":"U.S. Forest Service- Pacific Northwest Region · Public domain"},"03":{"src":"https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Seal_Rocks%2C_Ocean_Beach%2C_San_Francisco.jpg/1280px-Seal_Rocks%2C_Ocean_Beach%2C_San_Francisco.jpg","page":"https://commons.wikimedia.org/wiki/File:Seal_Rocks,_Ocean_Beach,_San_Francisco.jpg","credit":"Radomianin · CC BY-SA 4.0"},"04":{"src":"https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Thrown_Bowl_by_Bernard_Leach_%28YORYM-2004.1.166%29.JPG/1280px-Thrown_Bowl_by_Bernard_Leach_%28YORYM-2004.1.166%29.JPG","page":"https://commons.wikimedia.org/wiki/File:Thrown_Bowl_by_Bernard_Leach_(YORYM-2004.1.166).JPG","credit":"Bernard Leach · CC BY-SA 3.0"},"05":{"src":"https://upload.wikimedia.org/wikipedia/commons/e/ee/Wine_Tasting_at_Marsala_2.jpg","page":"https://commons.wikimedia.org/wiki/File:Wine_Tasting_at_Marsala_2.jpg","credit":"Christina Snyder · CC BY 2.0"},"06":{"src":"https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/%E6%95%99%E5%AE%A4_%E5%90%91%E3%81%8B%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B_%285581788977%29.jpg/1280px-%E6%95%99%E5%AE%A4_%E5%90%91%E3%81%8B%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B_%285581788977%29.jpg","page":"https://commons.wikimedia.org/wiki/File:%E6%95%99%E5%AE%A4_%E5%90%91%E3%81%8B%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B_(5581788977).jpg","credit":"Tomo · CC BY 2.0"},"07":{"src":"https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Taran_Lighthouse_Kalinigrad_Oblast_Tatiana_Yagunova_Watercolor_painting.jpg/1280px-Taran_Lighthouse_Kalinigrad_Oblast_Tatiana_Yagunova_Watercolor_painting.jpg","page":"https://commons.wikimedia.org/wiki/File:Taran_Lighthouse_Kalinigrad_Oblast_Tatiana_Yagunova_Watercolor_painting.jpg","credit":"Tatiana Yagunova / Татьяна Ягунова · CC BY-SA 4.0"},"08":{"src":"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/French_Cheese_and_Bread_Platter_%2829103261367%29.jpg/1280px-French_Cheese_and_Bread_Platter_%2829103261367%29.jpg","page":"https://commons.wikimedia.org/wiki/File:French_Cheese_and_Bread_Platter_(29103261367).jpg","credit":"Ella Olsson from Stockholm, Sweden · CC BY 2.0"},"09":{"src":"https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/Fire_at_A_braai.jpg/1280px-Fire_at_A_braai.jpg","page":"https://commons.wikimedia.org/wiki/File:Fire_at_A_braai.jpg","credit":"Thulani Godfrey Timba · CC BY-SA 4.0"}};
+ITEMS.forEach((it) => { it.photo = PHOTOS[it.no] || null; });
 const RIVALS = ["Pieter B.", "Lerato K.", "Johan V.", "Naledi M.", "Sipho D.", "Anke R."];
 
 // Derived state per item.
@@ -276,8 +280,8 @@ function chipHTML(it) {
 function renderFeed() {
   feed.innerHTML = ITEMS.map((it, i) => `
     <article class="item" data-i="${i}" aria-label="Item ${it.no}, ${esc(it.title)}">
-      <div class="photo" style="${artVars(it.art)}" role="img" aria-label="Photo of ${esc(it.title)} (placeholder)">
-        <div class="ground"></div><div class="hill"></div><div class="sun"></div>
+      <div class="photo" style="${artVars(it.art)}" role="img" aria-label="Photo of ${esc(it.title)}">
+        <div class="ground"></div><div class="hill"></div><div class="sun"></div>${it.photo ? `<img src="${it.photo.src}" alt="" loading="${i < 2 ? "eager" : "lazy"}" decoding="async">` : ""}
         <span class="tag">No.${it.no}</span><span class="chipwrap"></span>
       </div>
       <div class="info">
@@ -378,7 +382,7 @@ function openSheet(html) {
 function closeSheet() { scrim.classList.remove("show"); sheet.classList.remove("show"); if (lastFocus) lastFocus.focus({ preventScroll: true }); }
 scrim.addEventListener("click", closeSheet);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet.classList.contains("show")) closeSheet(); });
-const thumb = (it) => `<div class="thumb" style="${artVars(it.art)}" aria-hidden="true"><div class="ground"></div><div class="sun"></div></div>`;
+const thumb = (it) => `<div class="thumb" style="${artVars(it.art)}" aria-hidden="true"><div class="ground"></div><div class="sun"></div>${it.photo ? `<img src="${it.photo.src}" alt="" loading="lazy">` : ""}</div>`;
 
 // Bid confirmation: always shows the item's picture and name.
 function openBid(i = active) {
@@ -441,6 +445,7 @@ function openDetails(i) {
     <div class="label">Bid history</div>
     ${it.bids.length ? `<div class="hist">${it.bids.map((b) => `<div><span class="a">${R(b[1])}</span><span class="w">${esc(b[0])}</span><span class="t">${ago(b[2])}</span></div>`).join("")}</div>`
       : `<p class="prose" style="color:var(--muted)">No bids yet. The opening bid is ${R(it.reserve)}.</p>`}
+    ${it.photo ? `<p class="note">Photo: <a href="${it.photo.page}" target="_blank" rel="noopener">${esc(it.photo.credit)}</a>, via Wikimedia Commons. Demo image only.</p>` : ""}
     <button class="ghost" id="close">Close</button>`);
   $("close").addEventListener("click", closeSheet);
 }
